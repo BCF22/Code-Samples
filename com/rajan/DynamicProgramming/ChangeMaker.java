@@ -1,58 +1,79 @@
-package com.rajan.DynamicProgramming;
+import java.io.File;
+import java.util.Scanner;
+import java.util.ArrayList;
+public final class ChangeMaker {
 
-/*
- * Goal: Make change for amount of money C. Use as few as coins possible.
- * It is equivalent to Integer KnapSack
- */
+	private int[] coins;
+	private int nCoins;
+	private int change;
+	private int[] CM; //the dynamic programming table
+	private int[] decision;//remember the decision that we make at each subproblem
+	private ArrayList<Integer> selectedCoins;
 
-public class ChangeMaker {
-	
-	/* 
-	 * M[j] = minimum coins required to make change for amount of money j
-	 * M[j] = Over all i, min{ M[j-denom[i]] } + 1
-	 */
-	private static int min = Integer.MAX_VALUE;
-	private static int denom[] = {1, 5, 10, 25};
-	
-	/* Recursion : Not Optimized */
-	public static void makeChangeR(int C, int count){
-		if(C<0){
-			return;
-		}
-		if(C==0 && min > count){
-			min = count;
-		}
-		
-		for(int i=0; i < denom.length; i++){
-			makeChangeR(C - denom[i], count+1);
+	public static void main(String[] args){
+		if(args.length != 1){
+			System.out.println("Usage: java ChangeMaker <filename>");
+		} else {
+			new ChangeMaker(args[0]);
 		}
 	}
-	
-	/* Using Dynamic Programming */
-	public static int makeChangeI(int cost, int coins[]){
-		int ways=0;
-		for(int i=1; i <= cost; i++){
-			ways = 0;		
-			for(int j=0; j < denom.length; j++){
-				if(i >= denom[j]){
-					ways = coins[i-denom[j]] + 1;
+
+	public ChangeMaker(String filename){
+		Scanner scan = null;
+		try {
+				scan = new Scanner(new File(filename));
+				nCoins = Integer.parseInt(scan.nextLine());
+				coins = new int[nCoins];
+				for(int i=0; i<nCoins; i++){
+					coins[i] = Integer.parseInt(scan.nextLine());
 				}
-				if(coins[i]==0 || ways < coins[i]){
-					coins[i] = ways;
+				change = Integer.parseInt(scan.nextLine());
+				CM = new int[change+1];
+				decision = new int[change+1];
+				selectedCoins = new ArrayList<>();
+
+		} catch (Exception e) {
+			System.out.println("Error reading file " + filename + ": " + e.getMessage());
+		} finally{
+      scan.close();
+    }
+
+		solve();
+
+		System.out.println("The minimum number of coins to make a change of value "
+											+ change + " is " + CM[change]);
+		buildSolution();
+		System.out.println("The selected coins are: " + selectedCoins.toString());
+
+	}
+
+	private void solve(){
+		CM[0] = 0; //0 coins are needed for a change value of zero
+		for(int i=1; i<= change; i++){
+			int min = Integer.MAX_VALUE;
+			for(int j=0; j<nCoins; j++){
+				if(i >= coins[j]){ //i is the current change value
+					if(1 + CM[i - coins[j]] < min){ //coin j taken
+						//TODO: Update min and CM[i]
+						min = CM[change];
+						System.out.println("min = "+min+"    coins ="+coins[j]);
+						CM[i] = 1 + CM[i -coins[j]];
+
+						decision[i] = j;
+					}
 				}
 			}
 		}
-		return coins[cost];
 	}
-	
-	public static void main(String[] args){
-		int cost = 70;
-		int coins[] = new int[cost+1];
-		for(int i=0; i < coins.length; i++){
-			coins[i] = 0;
+
+	private void buildSolution(){
+		int cur = change; //start from the largest subproblem
+		for(int i=0; i<CM[change]; i++){ //CM[change] is the minimum number of coins
+				//decision[cur] is the coin number selected at subproblem cur
+				//TODO: Add the selected coin value (coins[decision[cur]]) to selectedCoins
+				selectedCoins.add(coins[decision[cur]]);
+				cur = cur - coins[decision[cur]]; //the next subproblem is cur - coins[decision[cur]]
 		}
-		//makeChangeR(cost, 0);	// can take lot of time for big values
-		//System.out.println("Minimum Coins required for making " + cost + " is : " + min);
-		System.out.println("Minimum Coins required for making " + cost + " is : " + makeChangeI(cost, coins));
 	}
+
 }
